@@ -5,3 +5,4 @@ pyjwt
 google
 protobuf
 pycryptodome
+protobuf_decoder
