@@ -255,6 +255,55 @@ def xSEndMsg(Msg , Tp , Tp2 , id , K , V):
     Pk = "080112" + EnC_Uid(len(Pk) // 2 , Tp = 'Uid') + Pk
     return GeneRaTePk(str(Pk) , '1215' , K , V)
 
+def ghost_pakcet(player_id , nm , secret_code , key ,iv):
+    fields = {
+        1: 61,
+        2: {
+            1: int(player_id),  
+            2: {
+                1: int(player_id),  
+                2: 1159,  
+                3: f"[b][c][{ArA_CoLor()}]{nm}",  
+                5: 12,  
+                6: 15,
+                7: 1,
+                8: {
+                    2: 1,
+                    3: 1,
+                },
+                9: 3,
+            },
+            3: secret_code,},}
+    return GeneRaTePk(str(CrEaTe_ProTo(fields).hex()), '0515', key, iv)
+    
+    
+def ExiT(id , K , V):
+    fields = {
+        1: 7,
+        2: {
+            1: int(11037044965)
+        }
+        }
+    return GeneRaTePk(str(CrEaTe_ProTo(fields).hex()) , '0515' , K , V)
+    
+def GenJoinSquadsPacket(code, key, iv):
+    fields = {}
+    fields[1] = 4
+    fields[2] = {}
+    fields[2][4] = bytes.fromhex("01090a0b121920")
+    fields[2][5] = str(code)
+    fields[2][6] = 6
+    fields[2][8] = 1
+    fields[2][9] = {}
+    fields[2][9][2] = 800
+    fields[2][9][6] = 11
+    fields[2][9][8] = "1.111.1"
+    fields[2][9][9] = 5
+    fields[2][9][10] = 1
+    print(fields)
+    return GeneRaTePk(str(CrEaTe_ProTo(fields).hex()), '0515', key, iv)
+            
+
 def Auth_Chat(idT, sq, K, V):
     fields = {
         1: 3,
