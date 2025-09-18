@@ -384,7 +384,7 @@ class TcpBotConnectMain:
                 print(f"[{self.account_id}] Executing /bngx for code {self.id}")
                 commands_sent = 0
 
-                self.CliEnts2.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
+                self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
                 time.sleep(0.5)
 
                 if '0500' in self.DaTa2.hex()[0:4] and len(self.DaTa2.hex()) > 30:
@@ -393,15 +393,15 @@ class TcpBotConnectMain:
                     idT = self.dT["5"]["data"]["1"]["data"]
                     print(f"[{self.account_id}] Target ID: {idT}")
 
-                    self.CliEnts2.send(ExiT('000000', self.key, self.iv))
-                    self.CliEnts2.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
+                    self.socket_client.send(ExiT('000000', self.key, self.iv))
+                    self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
 
                     for i in range(1):
-                        self.CliEnts2.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
-                        self.CliEnts2.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
+                        self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
+                        self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
                         time.sleep(0.5)
-                        self.CliEnts2.send(ExiT('000000', self.key, self.iv))
-                        self.CliEnts2.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
+                        self.socket_client.send(ExiT('000000', self.key, self.iv))
+                        self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
 
                 return f"/bngx command executed for code {self.id}"
             
