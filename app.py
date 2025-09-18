@@ -382,29 +382,91 @@ class TcpBotConnectMain:
                 
                 self.id, self.nm = (command[6:].split(" ", 1) if " " in command[6:] else [command[6:], "insta:kha_led_mhd"])
                 print(f"[{self.account_id}] Executing /bngx for code {self.id}")
-                commands_sent = 0
 
-                # إرسال الحزمة واستلام الرد
+                # أرسل طلب الانضمام وانتظر الرد الذي يبدأ بـ 0500
                 self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
-                self.DaTa2 = self.socket_client.recv(9999)  # تخزين الرد في self.DaTa2
-                time.sleep(0.5)
+                
+                # ننتظر وصول باكيت 0500 ضمن ردود السيرفر
+                data2 = b''
+                wait_attempts = 30             # عدد محاولات recv قبل الفشل (تستطيع تغييره)
+                recv_timeout = 0.5             # ثانية لكل محاولة recv
+                found_0500 = False
 
-                if '0500' in self.DaTa2.hex()[0:4] and len(self.DaTa2.hex()) > 30:
-                    self.dT = json.loads(DeCode_PackEt(self.DaTa2.hex()[10:]))
+                for attempt in range(wait_attempts):
+                    try:
+                        # نستخدم select للتأكد من وجود بيانات للقراءة (لتفادي حجب recv)
+                        readable, _, _ = select.select([self.socket_client], [], [], recv_timeout)
+                        if self.socket_client in readable:
+                            chunk = self.socket_client.recv(9999)
+                            if not chunk:
+                                print(f"[{self.account_id}] Server closed connection while waiting for 0500")
+                                break
+                            data2 += chunk
+                            # تحويل للهكس وفحص البادئة
+                            try:
+                                hx = data2.hex()
+                                if len(hx) >= 4 and '0500' in hx[0:4]:
+                                    found_0500 = True
+                                    break
+                            except Exception:
+                                pass
+                        else:
+                            # لا بيانات في هذه الدورة، نكمل الانتظار
+                            continue
+                    except (OSError, socket.error) as e:
+                        print(f"[{self.account_id}] Socket error while waiting for 0500: {e}")
+                        break
+                    except Exception as e:
+                        print(f"[{self.account_id}] Unexpected error while waiting for 0500: {e}")
+                        break
+
+                if not found_0500:
+                    return f"No 0500 packet received for code {self.id}"
+
+                # الآن نفكّ الباكيت ونستخرج السكواد والـ id
+                try:
+                    # نفترض أن payload يبدأ من البايت رقم 10 كما في الكود الأصلي
+                    hx = data2.hex()
+                    payload_hex = hx[10:]
+                    self.dT = json.loads(DeCode_PackEt(payload_hex))
                     sq = self.dT["5"]["data"]["31"]["data"]
                     idT = self.dT["5"]["data"]["1"]["data"]
-                    print(f"[{self.account_id}] Target ID: {idT}")
+                    print(f"[{self.account_id}] Found squad: {sq}, target id: {idT}")
+                except Exception as e:
+                    print(f"[{self.account_id}] Failed to parse 0500 packet: {e}")
+                    return f"Failed to parse 0500 packet: {e}"
 
+                # أرسل خروج ثم حزمة الشبح (ghost)
+                try:
                     self.socket_client.send(ExiT('000000', self.key, self.iv))
+                    time.sleep(0.5)
                     self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
+                    time.sleep(0.5)
 
+                    # إرسال تكرارات حسب الأصل (هنا حلقة واحدة كما في الأصلي)
                     for i in range(1):
                         self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
-                        self.DaTa2 = self.socket_client.recv(9999)  # تحديث الرد
+                        # نحاول قراءة رد جديد (تحديث data2) إذا ظهر
+                        try:
+                            readable, _, _ = select.select([self.socket_client], [], [], 0.5)
+                            if self.socket_client in readable:
+                                more = self.socket_client.recv(9999)
+                                if more:
+                                    data2 += more
+                        except:
+                            pass
+
                         self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
                         time.sleep(0.5)
                         self.socket_client.send(ExiT('000000', self.key, self.iv))
                         self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
+
+                except (OSError, socket.error) as e:
+                    print(f"[{self.account_id}] Socket error while sending ghost/exits: {e}")
+                    return f"Socket error while sending ghost/exits: {e}"
+                except Exception as e:
+                    print(f"[{self.account_id}] Unexpected error while sending ghost/exits: {e}")
+                    return f"Unexpected error while sending ghost/exits: {e}"
 
                 return f"/bngx command executed for code {self.id}"
             
