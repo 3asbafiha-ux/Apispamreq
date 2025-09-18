@@ -374,74 +374,69 @@ class TcpBotConnectMain:
         else:
             return final_result
     
-    def execute_command(self, command, *args):
-        if command == "bngx":
-            try:
-                if not self.CliEnts or not self.is_socket_connected(self.CliEnts):
-                    return "Socket not connected, please wait for connection..."
-                
-                # التحقق من UID
-                self.ChEck_ReGister = ChEck_The_Uid(self.DeCode_CliEnt_Uid)
+def execute_command(self, command, *args):
+    if command == "bngx":
+        try:
+            if not self.CliEnts or not self.is_socket_connected(self.CliEnts):
+                return "Socket not connected, please wait for connection..."
+            
+            # استخراج id و name من args أو استخدام القيمة الافتراضية
+            if args and len(args) > 0:
+                self.id = args[0]
+                self.nm = args[1] if len(args) > 1 else "insta:kha_led_mhd"
+            else:
+                return "Missing arguments: require <code> [name]"
 
-                # استخراج id و name من args أو استخدام القيمة الافتراضية
-                if args and len(args) > 0:
-                    self.id = args[0]
-                    self.nm = args[1] if len(args) > 1 else "insta:kha_led_mhd"
-                else:
-                    return "Missing arguments: require <code> [name]"
+            self.Zx = ChEck_Commande(self.id)
 
-                self.Zx = ChEck_Commande(self.id)
+            if self.Zx:
+                # إشعار بالانضمام
+                self.CliEnts.send(xSEndMsg(
+                    f'\n[b][c][{ArA_CoLor()}] JoinInG With Code {self.id}\n',
+                    2, self.DeCode_CliEnt_Uid, self.DeCode_CliEnt_Uid,
+                    self.key, self.iv
+                ))
 
-                if self.ChEck_ReGister and self.Zx:
-                    # إشعار بالانضمام
-                    self.CliEnts.send(xSEndMsg(
-                        f'\n[b][c][{ArA_CoLor()}] JoinInG With Code {self.id}\n',
-                        2, self.DeCode_CliEnt_Uid, self.DeCode_CliEnt_Uid,
-                        self.key, self.iv
-                    ))
+                # إرسال join squad
+                self.CliEnts2.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
+                time.sleep(0.5)
 
-                    # إرسال join squad
-                    self.CliEnts2.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
-                    time.sleep(0.5)
+                # تحقق من الباكدج
+                if '0500' in self.DaTa2.hex()[0:4] and len(self.DaTa2.hex()) > 30:
+                    self.dT = json.loads(DeCode_PackEt(self.DaTa2.hex()[10:]))
+                    sq = self.dT["5"]["data"]["31"]["data"]
+                    idT = self.dT["5"]["data"]["1"]["data"]
 
-                    # تحقق من الباكدج
-                    if '0500' in self.DaTa2.hex()[0:4] and len(self.DaTa2.hex()) > 30:
-                        self.dT = json.loads(DeCode_PackEt(self.DaTa2.hex()[10:]))
-                        sq = self.dT["5"]["data"]["31"]["data"]
-                        idT = self.dT["5"]["data"]["1"]["data"]
+                    print(f"[{self.account_id}] Target ID: {idT}")
 
-                        print(f"[{self.account_id}] Target ID: {idT}")
+                    # خروج + ghost
+                    self.CliEnts2.send(ExiT('000000', self.key, self.iv))
+                    self.CliEnts2.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
 
-                        # خروج + ghost
+                    # تكرار مرة إضافية
+                    for _ in range(1):
+                        self.CliEnts2.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
+                        self.CliEnts2.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
+                        time.sleep(0.5)
                         self.CliEnts2.send(ExiT('000000', self.key, self.iv))
                         self.CliEnts2.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
 
-                        # تكرار مرة إضافية
-                        for _ in range(1):
-                            self.CliEnts2.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
-                            self.CliEnts2.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
-                            time.sleep(0.5)
-                            self.CliEnts2.send(ExiT('000000', self.key, self.iv))
-                            self.CliEnts2.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
+                return f"[{self.account_id}] bngx executed successfully with code {self.id}"
 
-                    return f"[{self.account_id}] bngx executed successfully with code {self.id}"
+            else:
+                return f"[{self.account_id}] - Please use /cood <code> (Ex: /cood 517284)"
 
-                elif not self.Zx:
-                    return f"[{self.account_id}] - Please use /cood <code> (Ex: /cood 517284)"
-                elif not self.ChEck_ReGister:
-                    DeLet_Uid(self.DeCode_CliEnt_Uid, self.Token)
-                    return f"[{self.account_id}] UID not registered, deleted."
-
-            except Exception as e:
-                try:
-                    self.CliEnts.close()
-                    self.CliEnts2.close()
-                    self.Connect_SerVer(self.Token, self.tok, self.host, self.port, self.key, self.iv, self.host2, self.port2)
-                except:
-                    pass
-                return f"[{self.account_id}] Error executing bngx: {e}"
-        else:
-            return f"Unknown command: {command}"
+        except Exception as e:
+            try:
+                self.CliEnts.close()
+                self.CliEnts2.close()
+                self.Connect_SerVer(self.Token, self.tok, self.host, self.port,
+                                    self.key, self.iv, self.host2, self.port2)
+            except:
+                pass
+            return f"[{self.account_id}] Error executing bngx: {e}"
+    else:
+        return f"Unknown command: {command}"
 
 
 def load_accounts(file_path):
@@ -509,7 +504,7 @@ def execute_command_route():
     data = request.json
     account_id = data.get('account_id')
     command = data.get('command')
-    args = data.get('args', [])
+    client_args = data.get('args', [])
 
     if not account_id or not command:
         return jsonify({'error': 'Account ID and command are required'}), 400
@@ -520,12 +515,22 @@ def execute_command_route():
     client = clients[account_id]
 
     try:
-        result = client.execute_command(command, *args)
+        if not client.CliEnts or not client.is_socket_connected(client.CliEnts):
+            return jsonify({'error': 'Socket not connected, please wait for connection...'}), 503
+
+        # تنفيذ الأمر باستخدام execute_command بنفس طريقة التنفيذ داخل اللعبة
+        result = client.execute_command(command, *client_args)
+        return jsonify({'result': result}), 200
+
     except Exception as e:
-        return jsonify({'error': f'Error executing command: {str(e)}'}), 500
-
-    return jsonify({'result': result}), 200
-
+        try:
+            client.CliEnts.close()
+            client.CliEnts2.close()
+            client.Connect_SerVer(client.Token, client.tok, client.host, client.port,
+                                  client.key, client.iv, client.host2, client.port2)
+        except:
+            pass
+        return jsonify({'error': f'Error executing command: {e}'}), 500
 
 @app.route('/list_clients', methods=['GET'])
 def list_clients():
