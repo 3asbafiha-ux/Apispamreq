@@ -237,7 +237,16 @@ def DeCode_PackEt(input_text):
     except Exception as e:
         print(f"error {e}")
         return None
-                      
+def DeCode_PackEt(input_text):
+    try:
+        parsed_results = Parser().parse(input_text)
+        parsed_results_objects = parsed_results
+        parsed_results_dict = Fix_PackEt(parsed_results_objects)
+        json_data = json.dumps(parsed_results_dict)
+        return json_data
+    except Exception as e:
+        print(f"error {e}")
+        return None                      
 def xMsGFixinG(n):
     return '🗿'.join(str(n)[i:i + 3] for i in range(0 , len(str(n)) , 3))
 
@@ -626,3 +635,4 @@ def Clear_Approvs():
 load_blacklist() ; encrypt_uids()    
 load_approve() ; encrypt_uids2()   
 like_data_clan , like_data , room_data = L_DaTa()
+
