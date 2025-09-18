@@ -374,71 +374,42 @@ class TcpBotConnectMain:
         else:
             return final_result
     
-def execute_command(self, command, *args):
-    if command == "bngx":
-        try:
-            if not self.CliEnts or not self.is_socket_connected(self.CliEnts):
-                return "Socket not connected, please wait for connection..."
-            
-            # استخراج id و name من args أو استخدام القيمة الافتراضية
-            if args and len(args) > 0:
-                self.id = args[0]
-                self.nm = args[1] if len(args) > 1 else "insta:kha_led_mhd"
-            else:
-                return "Missing arguments: require <code> [name]"
+    def execute_command(self, command, *args):
+        if '/bngx' in command[:5]:
+            try:
+                if not self.socket_client or not self.is_socket_connected(self.socket_client):
+                    return "Socket not connected, please wait for connection..."
+                
+                self.id, self.nm = (command[6:].split(" ", 1) if " " in command[6:] else [command[6:], "insta:kha_led_mhd"])
+                print(f"[{self.account_id}] Executing /bngx for code {self.id}")
+                commands_sent = 0
 
-            self.Zx = ChEck_Commande(self.id)
-
-            if self.Zx:
-                # إشعار بالانضمام
-                self.CliEnts.send(xSEndMsg(
-                    f'\n[b][c][{ArA_CoLor()}] JoinInG With Code {self.id}\n',
-                    2, self.DeCode_CliEnt_Uid, self.DeCode_CliEnt_Uid,
-                    self.key, self.iv
-                ))
-
-                # إرسال join squad
                 self.CliEnts2.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
                 time.sleep(0.5)
 
-                # تحقق من الباكدج
                 if '0500' in self.DaTa2.hex()[0:4] and len(self.DaTa2.hex()) > 30:
                     self.dT = json.loads(DeCode_PackEt(self.DaTa2.hex()[10:]))
                     sq = self.dT["5"]["data"]["31"]["data"]
                     idT = self.dT["5"]["data"]["1"]["data"]
-
                     print(f"[{self.account_id}] Target ID: {idT}")
 
-                    # خروج + ghost
                     self.CliEnts2.send(ExiT('000000', self.key, self.iv))
                     self.CliEnts2.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
 
-                    # تكرار مرة إضافية
-                    for _ in range(1):
+                    for i in range(1):
                         self.CliEnts2.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
                         self.CliEnts2.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
                         time.sleep(0.5)
                         self.CliEnts2.send(ExiT('000000', self.key, self.iv))
                         self.CliEnts2.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
 
-                return f"[{self.account_id}] bngx executed successfully with code {self.id}"
-
-            else:
-                return f"[{self.account_id}] - Please use /cood <code> (Ex: /cood 517284)"
-
-        except Exception as e:
-            try:
-                self.CliEnts.close()
-                self.CliEnts2.close()
-                self.Connect_SerVer(self.Token, self.tok, self.host, self.port,
-                                    self.key, self.iv, self.host2, self.port2)
-            except:
-                pass
-            return f"[{self.account_id}] Error executing bngx: {e}"
-    else:
-        return f"Unknown command: {command}"
-
-
+                return f"/bngx command executed for code {self.id}"
+            
+            except Exception as e:
+                print(f"[{self.account_id}] Error in execute_command: {e}")
+                return f"Error executing command: {e}"
+        else:
+            return f"Unknown command: {command}"
 def load_accounts(file_path):
     with open(file_path, 'r') as file:
         return json.load(file)
@@ -497,40 +468,33 @@ def stop_client():
     return jsonify({'message': f'Client {account_id} stopped successfully'}), 200
 
 @app.route('/execute_command', methods=['POST'])
-def execute_command_route():
+def execute_command():
     if shutting_down:
         return jsonify({'error': 'Server is shutting down'}), 503
-
+        
     data = request.json
     account_id = data.get('account_id')
     command = data.get('command')
-    client_args = data.get('args', [])
-
+    client_id = data.get('client_id')
+    
     if not account_id or not command:
         return jsonify({'error': 'Account ID and command are required'}), 400
-
+    
     if account_id not in clients:
         return jsonify({'error': 'Client not found'}), 404
-
+    
     client = clients[account_id]
-
-    try:
-        if not client.CliEnts or not client.is_socket_connected(client.CliEnts):
-            return jsonify({'error': 'Socket not connected, please wait for connection...'}), 503
-
-        # تنفيذ الأمر باستخدام execute_command بنفس طريقة التنفيذ داخل اللعبة
-        result = client.execute_command(command, *client_args)
-        return jsonify({'result': result}), 200
-
-    except Exception as e:
+    
+    args = []
+    if client_id:
         try:
-            client.CliEnts.close()
-            client.CliEnts2.close()
-            client.Connect_SerVer(client.Token, client.tok, client.host, client.port,
-                                  client.key, client.iv, client.host2, client.port2)
-        except:
-            pass
-        return jsonify({'error': f'Error executing command: {e}'}), 500
+            args.append(int(client_id))
+        except ValueError:
+            return jsonify({'error': 'Invalid client_id format'}), 400
+    
+    result = client.execute_command(command, *args)
+    
+    return jsonify({'result': result}), 200
 
 @app.route('/list_clients', methods=['GET'])
 def list_clients():
