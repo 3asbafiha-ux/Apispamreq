@@ -384,7 +384,9 @@ class TcpBotConnectMain:
                 print(f"[{self.account_id}] Executing /bngx for code {self.id}")
                 commands_sent = 0
 
+                # إرسال الحزمة واستلام الرد
                 self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
+                self.DaTa2 = self.socket_client.recv(9999)  # تخزين الرد في self.DaTa2
                 time.sleep(0.5)
 
                 if '0500' in self.DaTa2.hex()[0:4] and len(self.DaTa2.hex()) > 30:
@@ -398,6 +400,7 @@ class TcpBotConnectMain:
 
                     for i in range(1):
                         self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
+                        self.DaTa2 = self.socket_client.recv(9999)  # تحديث الرد
                         self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
                         time.sleep(0.5)
                         self.socket_client.send(ExiT('000000', self.key, self.iv))
