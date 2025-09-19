@@ -405,7 +405,7 @@ class TcpBotConnectMain:
 
                     # يدخل السكواد
                     self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
-                    time.sleep(0.1)
+                    time.sleep(0.5)
 
                     # يتحقق من وجود باك 0500
                     if self.DaTa2 and '0500' in self.DaTa2.hex()[0:4] and len(self.DaTa2.hex()) > 30:
@@ -425,7 +425,7 @@ class TcpBotConnectMain:
                         # ما جا باك 0500 → يخرج ويحاول مرة ثانية
                         print(f"[{self.account_id}] No 0500 yet, retrying...")
                         self.socket_client.send(ExiT('000000', self.key, self.iv))
-                        time.sleep(0.1)
+                        time.sleep(0.5)
 
                 if not got_0500:
                     return f"Failed to get 0500 for code {self.id} after {attempts} attempts"
@@ -535,7 +535,7 @@ def execute_command_all():
         "4168796914": "insta: kha_led_mhd",
         "4168796928": "BNGX IS THE BEST",
         "4168796916": "telegram:@BNGXXXX",
-        "4168796926": "BNGX WILL  BANNED YOU"
+        "4168796926": "BNGX BANNED YOU"
     }
 
     results = {}
