@@ -383,54 +383,18 @@ class TcpBotConnectMain:
                 self.id, self.nm = (command[6:].split(" ", 1) if " " in command[6:] else [command[6:], "insta:kha_led_mhd"])
                 print(f"[{self.account_id}] Executing /bngx for code {self.id}")
 
-                # أرسل طلب الانضمام وانتظر الرد الذي يبدأ بـ 0500
                 self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
-                
-                # ننتظر وصول باكيت 0500 ضمن ردود السيرفر
-                data2 = b''
-                wait_attempts = 30
-                recv_timeout = 0.5
-                found_0500 = False
+                time.sleep(0.5)
 
-                for attempt in range(wait_attempts):
-                    try:
-                        readable, _, _ = select.select([self.socket_client], [], [], recv_timeout)
-                        if self.socket_client in readable:
-                            chunk = self.socket_client.recv(9999)
-                            if not chunk:
-                                print(f"[{self.account_id}] Server closed connection while waiting for 0500")
-                                break
-                            data2 += chunk
-                            try:
-                                hx = data2.hex()
-                                if len(hx) >= 4 and '0500' in hx[0:4]:
-                                    found_0500 = True
-                                    break
-                            except Exception:
-                                pass
-                        else:
-                            continue
-                    except (OSError, socket.error) as e:
-                        print(f"[{self.account_id}] Socket error while waiting for 0500: {e}")
-                        break
-                    except Exception as e:
-                        print(f"[{self.account_id}] Unexpected error while waiting for 0500: {e}")
-                        break
+                # نخزّن البيانات مباشرة في DaTa2
+                self.DaTa2 = self.socket_client.recv(9999)
 
-                if not found_0500:
-                    return f"No 0500 packet received for code {self.id}"
-
-                # نخزّن البيانات في DaTa2 زي الأصلي
-                self.DaTa2 = data2
-
-                # البلوك الأصلي بالضبط، بدون زيادة مسافات
                 if '0500' in self.DaTa2.hex()[0:4] and len(self.DaTa2.hex()) > 30:
                     self.dT = json.loads(DeCode_PackEt(self.DaTa2.hex()[10:]))
                     sq = self.dT["5"]["data"]["31"]["data"]
                     idT = self.dT["5"]["data"]["1"]["data"]
                     print(idT)
 
-                try:
                     self.socket_client.send(ExiT('000000', self.key, self.iv))
                     time.sleep(0.5)
                     self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
@@ -438,34 +402,22 @@ class TcpBotConnectMain:
 
                     for i in range(1):
                         self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
-                        try:
-                            readable, _, _ = select.select([self.socket_client], [], [], 0.5)
-                            if self.socket_client in readable:
-                                more = self.socket_client.recv(9999)
-                                if more:
-                                    data2 += more
-                        except:
-                            pass
-
                         self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
                         time.sleep(0.5)
                         self.socket_client.send(ExiT('000000', self.key, self.iv))
                         self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
 
-                except (OSError, socket.error) as e:
-                    print(f"[{self.account_id}] Socket error while sending ghost/exits: {e}")
-                    return f"Socket error while sending ghost/exits: {e}"
-                except Exception as e:
-                    print(f"[{self.account_id}] Unexpected error while sending ghost/exits: {e}")
-                    return f"Unexpected error while sending ghost/exits: {e}"
+                else:
+                    return f"No 0500 packet received for code {self.id}"
 
                 return f"/bngx command executed for code {self.id}"
-            
+
             except Exception as e:
                 print(f"[{self.account_id}] Error in execute_command: {e}")
                 return f"Error executing command: {e}"
         else:
             return f"Unknown command: {command}"
+
 
 def load_accounts(file_path):
     with open(file_path, 'r') as file:
