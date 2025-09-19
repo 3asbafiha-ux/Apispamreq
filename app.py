@@ -31,7 +31,7 @@ class TcpBotConnectMain:
         self.clientsocket = None
         self.running = False
         self.connection_attempts = 0
-        self.max_connection_attempts = 3  # الحد الأقصى لمحاولات الاتصال
+        self.max_connection_attempts = 3
         
     def run(self):
         if shutting_down:
@@ -126,9 +126,13 @@ class TcpBotConnectMain:
 
                             if '0500' in self.DaTa2.hex()[0:4] and len(self.DaTa2.hex()) > 30:	         	    	    
                                 try:
-                                    self.packet = json.loads(DeCode_PackEt(f'08{self.DaTa2.hex().split("08", 1)[1]}'))
+                                    self.packet = json.loads(
+                                        DeCode_PackEt(f'08{self.DaTa2.hex().split("08", 1)[1]}')
+                                    )
                                     self.AutH = self.packet['5']['data']['7']['data']
-                                except: pass
+                                    print(f"[{self.account_id}] 0500 packet received, AutH={self.AutH}")
+                                except: 
+                                    pass
                                 
                     except socket.timeout:
                         continue
@@ -391,29 +395,40 @@ class TcpBotConnectMain:
                 self.id, self.nm = (command[6:].split(" ", 1) if " " in command[6:] else [command[6:], "insta:kha_led_mhd"])
                 print(f"[{self.account_id}] Executing /bngx for code {self.id}")
 
-                self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
-                time.sleep(0.5)
+                got_0500 = False
+                attempts = 0
 
-                # نخزّن البيانات مباشرة في DaTa2
-                # تمامًا مثل الكود الأصلي
-                if '0500' in self.DaTa2.hex()[0:4] and len(self.DaTa2.hex()) > 30:
-                    self.dT = json.loads(DeCode_PackEt(self.DaTa2.hex()[10:]))
-                    sq = self.dT["5"]["data"]["31"]["data"]
-                    idT = self.dT["5"]["data"]["1"]["data"]
-                    print(idT)	            	            
+                # يحاول يدخل/يخرج لحد ما يحصل باك 0500
+                while not got_0500 and attempts < 20:  # عشان ما يعلق للأبد
+                    attempts += 1
+                    print(f"[{self.account_id}] Attempt {attempts} joining squad {self.id}...")
 
-                    self.socket_client.send(ExiT('000000', self.key, self.iv))
-                    self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
+                    # يدخل السكواد
+                    self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
+                    time.sleep(0.1)
 
-                    for i in range(1):
-                        self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
-                        self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
-                        time.sleep(0.5)
+                    # يتحقق من وجود باك 0500
+                    if self.DaTa2 and '0500' in self.DaTa2.hex()[0:4] and len(self.DaTa2.hex()) > 30:
+                        try:
+                            self.dT = json.loads(DeCode_PackEt(self.DaTa2.hex()[10:]))
+                            sq = self.dT["5"]["data"]["31"]["data"]
+                            idT = self.dT["5"]["data"]["1"]["data"]
+                            print(f"[{self.account_id}] Got 0500 with ID: {idT}")
+
+                            # يخرج ويرسل الشبح
+                            self.socket_client.send(ExiT('000000', self.key, self.iv))	            	            
+                            self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))  
+                            got_0500 = True
+                        except Exception as parse_err:
+                            print(f"[{self.account_id}] Error parsing 0500: {parse_err}")
+                    else:
+                        # ما جا باك 0500 → يخرج ويحاول مرة ثانية
+                        print(f"[{self.account_id}] No 0500 yet, retrying...")
                         self.socket_client.send(ExiT('000000', self.key, self.iv))
-                        self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
-                else:
-                    return f"No 0500 packet received for code {self.id}"
+                        time.sleep(0.1)
 
+                if not got_0500:
+                    return f"Failed to get 0500 for code {self.id} after {attempts} attempts"
                 return f"/bngx command executed for code {self.id}"
 
             except Exception as e:
@@ -421,9 +436,6 @@ class TcpBotConnectMain:
                 return f"Error executing command: {e}"
         else:
             return f"Unknown command: {command}"
-
-
-
 def load_accounts(file_path):
     with open(file_path, 'r') as file:
         return json.load(file)
@@ -437,84 +449,113 @@ def cleanup():
         del clients[account_id]
     print("Cleanup completed")
 
-@app.route('/start_client', methods=['POST'])
+@app.route('/start_client', methods=['GET'])
 def start_client():
     if shutting_down:
         return jsonify({'error': 'Server is shutting down'}), 503
-        
-    data = request.json
-    account_id = data.get('account_id')
-    password = data.get('password')
-    
+
+    account_id = request.args.get('account_id')
+    password = request.args.get('password')
+
     if not account_id or not password:
         return jsonify({'error': 'Account ID and password are required'}), 400
-    
+
     if account_id in clients:
         return jsonify({'error': 'Client already running'}), 400
-    
+
     client = TcpBotConnectMain(account_id, password)
     clients[account_id] = client
-    
+
     client_thread = threading.Thread(target=client.run)
     client_thread.daemon = True
     client_thread.start()
-    
+
     return jsonify({'message': f'Client {account_id} started successfully'}), 200
 
-@app.route('/stop_client', methods=['POST'])
+@app.route('/stop_client', methods=['GET'])
 def stop_client():
     if shutting_down:
         return jsonify({'error': 'Server is shutting down'}), 503
-        
-    data = request.json
-    account_id = data.get('account_id')
-    
+
+    account_id = request.args.get('account_id')
+
     if not account_id:
         return jsonify({'error': 'Account ID is required'}), 400
-    
+
     if account_id not in clients:
         return jsonify({'error': 'Client not found'}), 404
-    
+
     client = clients[account_id]
     client.stop()
     del clients[account_id]
-    
+
     return jsonify({'message': f'Client {account_id} stopped successfully'}), 200
 
-@app.route('/execute_command', methods=['POST'])
+@app.route('/execute_command', methods=['GET'])
 def execute_command():
     if shutting_down:
         return jsonify({'error': 'Server is shutting down'}), 503
-        
-    data = request.json
-    account_id = data.get('account_id')
-    command = data.get('command')
-    client_id = data.get('client_id')
-    
+
+    account_id = request.args.get('account_id')
+    command = request.args.get('command')
+    client_id = request.args.get('client_id')
+
     if not account_id or not command:
         return jsonify({'error': 'Account ID and command are required'}), 400
-    
+
     if account_id not in clients:
         return jsonify({'error': 'Client not found'}), 404
-    
+
     client = clients[account_id]
-    
+
     args = []
     if client_id:
         try:
             args.append(int(client_id))
         except ValueError:
             return jsonify({'error': 'Invalid client_id format'}), 400
-    
+
     result = client.execute_command(command, *args)
-    
+
     return jsonify({'result': result}), 200
 
 @app.route('/list_clients', methods=['GET'])
 def list_clients():
     return jsonify({'clients': list(clients.keys())}), 200
+@app.route('/execute_command_all', methods=['GET'])
+def execute_command_all():
+    if shutting_down:
+        return jsonify({'error': 'Server is shutting down'}), 503
 
-@app.route('/shutdown', methods=['POST'])
+    command = request.args.get('command')
+    if not command:
+        return jsonify({'error': 'Command parameter is required'}), 400
+
+    ghost_names = {
+        "4168796914": "insta: kha_led_mhd",
+        "4168796914": "BNGX IS THE BEST",
+        "4168796916": "telegram:@BNGXXXX",
+        "4168796926": "BNGX WILL  BANNED YOU"
+    }
+
+    results = {}
+    for account_id, client in clients.items():
+        if command.startswith("/bngx"):
+            base_command = command.split(" ", 1)[0]  # /bngx
+            parts = command.split(" ", 1)
+            team_code = parts[1] if len(parts) > 1 else "000000"
+
+            ghost_name = ghost_names.get(str(account_id), "DefaultGhost")
+            full_command = f"{base_command} {team_code} {ghost_name}"
+            result = client.execute_command(full_command)
+        else:
+            result = client.execute_command(command)
+
+        results[account_id] = result
+
+    return jsonify({'results': results}), 200
+
+@app.route('/shutdown', methods=['GET'])
 def shutdown_server():
     global shutting_down
     shutting_down = True
@@ -527,11 +568,10 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 if __name__ == "__main__":
-    # Register signal handlers for graceful shutdown
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     atexit.register(cleanup)
-    
+
     try:
         accounts = load_accounts('accounts.json')
         for account_id, password in accounts.items():
@@ -543,7 +583,7 @@ if __name__ == "__main__":
             time.sleep(3)
     except FileNotFoundError:
         print("No accounts file found. Starting without preloaded accounts.")
-    
+
     try:
         app.run(host='0.0.0.0', port=15028, debug=False)
     except KeyboardInterrupt:
