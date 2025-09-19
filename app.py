@@ -16,12 +16,15 @@ import atexit
 import os
 import signal
 import sys
+import psutil
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = Flask(__name__)
 clients = {}
 shutting_down = False
 
-# متغير مشترك لتخزين بيانات 0500 التي يحصل عليها الحساب الرئيسي
 shared_0500_info = {
     'got': False,
     'idT': None,
@@ -29,8 +32,42 @@ shared_0500_info = {
     'AutH': None
 }
 
-# عيّن هنا الـ account_id للحساب الرئيسي (حساب واحد فقط من الأربعة)
-MASTER_ACCOUNT_ID = '4134172836'  # مثال: غيّر حسب حسابك الرئيسي
+MASTER_ACCOUNT_ID = '4134172836'  # عدل حسب حسابك الرئيسي
+
+def AuTo_ResTartinG():
+    while not shutting_down:
+        time.sleep(6 * 60 * 60)
+        print('\n - AuTo ResTartinG The BoT ... ! ')
+        p = psutil.Process(os.getpid())
+        for handler in p.open_files():
+            try:
+                os.close(handler.fd)
+            except Exception as e:
+                print(f" - Error CLose Files : {e}")
+        for conn in p.connections():
+            try:
+                if hasattr(conn, 'fd'):
+                    os.close(conn.fd)
+            except Exception as e:
+                print(f" - Error CLose Connection : {e}")
+        python = sys.executable
+        os.execl(python, python, *sys.argv)
+
+def ResTarT_BoT():
+    print('\n - ResTartinG The BoT ... ! ')
+    p = psutil.Process(os.getpid())
+    for handler in p.open_files():
+        try:
+            os.close(handler.fd)
+        except Exception:
+            pass           
+    for conn in p.connections():
+        try:
+            conn.close()
+        except Exception:
+            pass
+    python = sys.executable
+    os.execl(python, python, *sys.argv)
 
 class TcpBotConnectMain:
     def __init__(self, account_id, password):
@@ -43,11 +80,19 @@ class TcpBotConnectMain:
         self.running = False
         self.connection_attempts = 0
         self.max_connection_attempts = 3
-        
+        self.AutH = None
+        self.DaTa2 = None
+    
     def run(self):
         if shutting_down:
             return
             
+        # بدء إعادة التشغيل التلقائي لوحدة العميل مرة واحدة
+        if not hasattr(self, "auto_restart_thread_started"):
+            t = threading.Thread(target=AuTo_ResTartinG, daemon=True)
+            t.start()
+            self.auto_restart_thread_started = True
+        
         self.running = True
         self.connection_attempts = 0
         
@@ -68,16 +113,16 @@ class TcpBotConnectMain:
     
     def stop(self):
         self.running = False
-        if self.clientsocket:
-            try:
+        try:
+            if self.clientsocket:
                 self.clientsocket.close()
-            except:
-                pass
-        if self.socket_client:
-            try:
+        except:
+            pass
+        try:
+            if self.socket_client:
                 self.socket_client.close()
-            except:
-                pass
+        except:
+            pass
         print(f"[{self.account_id}] Client stopped")
     
     def restart(self, delay=5):
@@ -401,7 +446,6 @@ class TcpBotConnectMain:
 
         if '/bngx' in command[:5]:
             try:
-                # تحقق من اتصال السوكيت
                 if not self.socket_client or not self.is_socket_connected(self.socket_client):
                     return "Socket not connected, please wait for connection..."
                 
@@ -409,10 +453,9 @@ class TcpBotConnectMain:
                 print(f"[{self.account_id}] Executing /bngx for code {self.id}")
 
                 if self.account_id == MASTER_ACCOUNT_ID:
-                    # الحساب الرئيسي يحصل على 0500
                     got_0500 = False
                     attempts = 0
-                    while not got_0500 and attempts < 20:  # عشان لا يعلق للأبد
+                    while not got_0500 and attempts < 20:
                         attempts += 1
                         print(f"[{self.account_id}] Attempt {attempts} joining squad {self.id}...")
 
@@ -445,16 +488,14 @@ class TcpBotConnectMain:
                     return f"/bngx master command executed successfully"
 
                 else:
-                    # باقي الحسابات ينتظرون بيانات 0500 من الحساب الرئيسي
                     wait_attempts = 0
-                    while not shared_0500_info['got'] and wait_attempts < 100:  # ينتظر حتى 10 ثواني تقريبًا
+                    while not shared_0500_info['got'] and wait_attempts < 100:
                         time.sleep(0.1)
                         wait_attempts += 1
 
                     if not shared_0500_info['got']:
                         return "Timeout waiting for master account to get 0500"
 
-                    # الدخول كشبح باستخدام بيانات الحساب الرئيسي
                     self.socket_client.send(GenJoinSquadsPacket(shared_0500_info['idT'], self.key, self.iv))
                     time.sleep(0.01)
                     self.socket_client.send(ExiT('000000', self.key, self.iv))
@@ -574,7 +615,7 @@ def execute_command_all():
     results = {}
     for account_id, client in clients.items():
         if command.startswith("/bngx"):
-            base_command = command.split(" ", 1)[0]  # /bngx
+            base_command = command.split(" ", 1)[0]
             parts = command.split(" ", 1)
             team_code = parts[1] if len(parts) > 1 else "000000"
 
