@@ -388,8 +388,8 @@ class TcpBotConnectMain:
                 
                 # ننتظر وصول باكيت 0500 ضمن ردود السيرفر
                 data2 = b''
-                wait_attempts = 1
-                recv_timeout = 1
+                wait_attempts = 30
+                recv_timeout = 0.5
                 found_0500 = False
 
                 for attempt in range(wait_attempts):
@@ -432,9 +432,9 @@ class TcpBotConnectMain:
 
                 try:
                     self.socket_client.send(ExiT('000000', self.key, self.iv))
-                    time.sleep(1)
+                    time.sleep(0.5)
                     self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
-                    time.sleep(1)
+                    time.sleep(0.5)
 
                     for i in range(1):
                         self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
@@ -466,6 +466,7 @@ class TcpBotConnectMain:
                 return f"Error executing command: {e}"
         else:
             return f"Unknown command: {command}"
+
 def load_accounts(file_path):
     with open(file_path, 'r') as file:
         return json.load(file)
