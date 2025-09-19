@@ -327,7 +327,7 @@ class TcpBotConnectMain:
     
     def get_tok(self):
         token_data = self.guest_token(self.account_id, self.password)
-        if not token_data:
+        if not token_
             print(f"[{self.account_id}] Failed to get token")
             self.restart()
             return
@@ -422,8 +422,6 @@ class TcpBotConnectMain:
         else:
             return f"Unknown command: {command}"
 
-
-
 def load_accounts(file_path):
     with open(file_path, 'r') as file:
         return json.load(file)
@@ -437,14 +435,13 @@ def cleanup():
         del clients[account_id]
     print("Cleanup completed")
 
-@app.route('/start_client', methods=['POST'])
+@app.route('/start_client', methods=['GET'])
 def start_client():
     if shutting_down:
         return jsonify({'error': 'Server is shutting down'}), 503
         
-    data = request.json
-    account_id = data.get('account_id')
-    password = data.get('password')
+    account_id = request.args.get('account_id')
+    password = request.args.get('password')
     
     if not account_id or not password:
         return jsonify({'error': 'Account ID and password are required'}), 400
@@ -461,13 +458,12 @@ def start_client():
     
     return jsonify({'message': f'Client {account_id} started successfully'}), 200
 
-@app.route('/stop_client', methods=['POST'])
+@app.route('/stop_client', methods=['GET'])
 def stop_client():
     if shutting_down:
         return jsonify({'error': 'Server is shutting down'}), 503
         
-    data = request.json
-    account_id = data.get('account_id')
+    account_id = request.args.get('account_id')
     
     if not account_id:
         return jsonify({'error': 'Account ID is required'}), 400
@@ -481,15 +477,14 @@ def stop_client():
     
     return jsonify({'message': f'Client {account_id} stopped successfully'}), 200
 
-@app.route('/execute_command', methods=['POST'])
+@app.route('/execute_command', methods=['GET'])
 def execute_command():
     if shutting_down:
         return jsonify({'error': 'Server is shutting down'}), 503
         
-    data = request.json
-    account_id = data.get('account_id')
-    command = data.get('command')
-    client_id = data.get('client_id')
+    account_id = request.args.get('account_id')
+    command = request.args.get('command')
+    client_id = request.args.get('client_id')
     
     if not account_id or not command:
         return jsonify({'error': 'Account ID and command are required'}), 400
@@ -514,7 +509,7 @@ def execute_command():
 def list_clients():
     return jsonify({'clients': list(clients.keys())}), 200
 
-@app.route('/shutdown', methods=['POST'])
+@app.route('/shutdown', methods=['GET'])
 def shutdown_server():
     global shutting_down
     shutting_down = True
