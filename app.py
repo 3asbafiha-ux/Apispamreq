@@ -388,8 +388,8 @@ class TcpBotConnectMain:
                 
                 # ننتظر وصول باكيت 0500 ضمن ردود السيرفر
                 data2 = b''
-                wait_attempts = 30
-                recv_timeout = 0.5
+                wait_attempts = 1
+                recv_timeout = 1
                 found_0500 = False
 
                 for attempt in range(wait_attempts):
@@ -432,11 +432,11 @@ class TcpBotConnectMain:
 
                 try:
                     self.socket_client.send(ExiT('000000', self.key, self.iv))
-                    time.sleep(0.5)
+                    time.sleep(1)
                     self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
-                    time.sleep(0.5)
+                    time.sleep(1)
 
-                    for i in range(999):
+                    for i in range(1):
                         self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
                         try:
                             readable, _, _ = select.select([self.socket_client], [], [], 0.5)
