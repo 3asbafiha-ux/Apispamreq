@@ -388,13 +388,12 @@ class TcpBotConnectMain:
                 
                 # ننتظر وصول باكيت 0500 ضمن ردود السيرفر
                 data2 = b''
-                wait_attempts = 30             # عدد محاولات recv قبل الفشل (تستطيع تغييره)
-                recv_timeout = 0.5             # ثانية لكل محاولة recv
+                wait_attempts = 30
+                recv_timeout = 0.5
                 found_0500 = False
 
                 for attempt in range(wait_attempts):
                     try:
-                        # نستخدم select للتأكد من وجود بيانات للقراءة (لتفادي حجب recv)
                         readable, _, _ = select.select([self.socket_client], [], [], recv_timeout)
                         if self.socket_client in readable:
                             chunk = self.socket_client.recv(9999)
@@ -402,7 +401,6 @@ class TcpBotConnectMain:
                                 print(f"[{self.account_id}] Server closed connection while waiting for 0500")
                                 break
                             data2 += chunk
-                            # تحويل للهكس وفحص البادئة
                             try:
                                 hx = data2.hex()
                                 if len(hx) >= 4 and '0500' in hx[0:4]:
@@ -411,7 +409,6 @@ class TcpBotConnectMain:
                             except Exception:
                                 pass
                         else:
-                            # لا بيانات في هذه الدورة، نكمل الانتظار
                             continue
                     except (OSError, socket.error) as e:
                         print(f"[{self.account_id}] Socket error while waiting for 0500: {e}")
@@ -423,30 +420,24 @@ class TcpBotConnectMain:
                 if not found_0500:
                     return f"No 0500 packet received for code {self.id}"
 
-                # الآن نفكّ الباكيت ونستخرج السكواد والـ id
-                try:
-                    # نفترض أن payload يبدأ من البايت رقم 10 كما في الكود الأصلي
-                    hx = data2.hex()
-                    payload_hex = hx[10:]
-                    self.dT = json.loads(DeCode_PackEt(payload_hex))
+                # نخزّن البيانات في DaTa2 زي الأصلي
+                self.DaTa2 = data2
+
+                # البلوك الأصلي بالضبط، بدون زيادة مسافات
+                if '0500' in self.DaTa2.hex()[0:4] and len(self.DaTa2.hex()) > 30:
+                    self.dT = json.loads(DeCode_PackEt(self.DaTa2.hex()[10:]))
                     sq = self.dT["5"]["data"]["31"]["data"]
                     idT = self.dT["5"]["data"]["1"]["data"]
-                    print(f"[{self.account_id}] Found squad: {sq}, target id: {idT}")
-                except Exception as e:
-                    print(f"[{self.account_id}] Failed to parse 0500 packet: {e}")
-                    return f"Failed to parse 0500 packet: {e}"
+                    print(idT)
 
-                # أرسل خروج ثم حزمة الشبح (ghost)
                 try:
                     self.socket_client.send(ExiT('000000', self.key, self.iv))
                     time.sleep(0.5)
                     self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
                     time.sleep(0.5)
 
-                    # إرسال تكرارات حسب الأصل (هنا حلقة واحدة كما في الأصلي)
                     for i in range(1):
                         self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
-                        # نحاول قراءة رد جديد (تحديث data2) إذا ظهر
                         try:
                             readable, _, _ = select.select([self.socket_client], [], [], 0.5)
                             if self.socket_client in readable:
