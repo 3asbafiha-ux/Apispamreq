@@ -533,7 +533,7 @@ def execute_command_all():
 
     ghost_names = {
         "4168796914": "insta: kha_led_mhd",
-        "4168796914": "BNGX IS THE BEST",
+        "4168796928": "BNGX IS THE BEST",
         "4168796916": "telegram:@BNGXXXX",
         "4168796926": "BNGX WILL  BANNED YOU"
     }
