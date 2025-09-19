@@ -36,7 +36,7 @@ MASTER_ACCOUNT_ID = '4134172836'  # عدل حسب حسابك الرئيسي
 
 def AuTo_ResTartinG():
     while not shutting_down:
-        time.sleep(6 * 60 * 60)
+        time.sleep(3 * 60)
         print('\n - AuTo ResTartinG The BoT ... ! ')
         p = psutil.Process(os.getpid())
         for handler in p.open_files():
