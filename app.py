@@ -21,6 +21,17 @@ app = Flask(__name__)
 clients = {}
 shutting_down = False
 
+# متغير مشترك لتخزين بيانات 0500 التي يحصل عليها الحساب الرئيسي
+shared_0500_info = {
+    'got': False,
+    'idT': None,
+    'squad': None,
+    'AutH': None
+}
+
+# عيّن هنا الـ account_id للحساب الرئيسي (حساب واحد فقط من الأربعة)
+MASTER_ACCOUNT_ID = '4134172836'  # مثال: غيّر حسب حسابك الرئيسي
+
 class TcpBotConnectMain:
     def __init__(self, account_id, password):
         self.account_id = account_id
@@ -386,6 +397,8 @@ class TcpBotConnectMain:
             return final_result
     
     def execute_command(self, command, *args):
+        global shared_0500_info
+
         if '/bngx' in command[:5]:
             try:
                 # تحقق من اتصال السوكيت
@@ -395,41 +408,59 @@ class TcpBotConnectMain:
                 self.id, self.nm = (command[6:].split(" ", 1) if " " in command[6:] else [command[6:], "insta:kha_led_mhd"])
                 print(f"[{self.account_id}] Executing /bngx for code {self.id}")
 
-                got_0500 = False
-                attempts = 0
+                if self.account_id == MASTER_ACCOUNT_ID:
+                    # الحساب الرئيسي يحصل على 0500
+                    got_0500 = False
+                    attempts = 0
+                    while not got_0500 and attempts < 20:  # عشان لا يعلق للأبد
+                        attempts += 1
+                        print(f"[{self.account_id}] Attempt {attempts} joining squad {self.id}...")
 
-                # يحاول يدخل/يخرج لحد ما يحصل باك 0500
-                while not got_0500 and attempts < 20:  # عشان ما يعلق للأبد
-                    attempts += 1
-                    print(f"[{self.account_id}] Attempt {attempts} joining squad {self.id}...")
+                        self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
+                        time.sleep(0.01)
 
-                    # يدخل السكواد
-                    self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
-                    time.sleep(0.5)
+                        if self.DaTa2 and '0500' in self.DaTa2.hex()[0:4] and len(self.DaTa2.hex()) > 30:
+                            try:
+                                self.dT = json.loads(DeCode_PackEt(self.DaTa2.hex()[10:]))
+                                sq = self.dT["5"]["data"]["31"]["data"]
+                                idT = self.dT["5"]["data"]["1"]["data"]
+                                shared_0500_info['got'] = True
+                                shared_0500_info['idT'] = idT
+                                shared_0500_info['squad'] = sq
+                                shared_0500_info['AutH'] = self.AutH
 
-                    # يتحقق من وجود باك 0500
-                    if self.DaTa2 and '0500' in self.DaTa2.hex()[0:4] and len(self.DaTa2.hex()) > 30:
-                        try:
-                            self.dT = json.loads(DeCode_PackEt(self.DaTa2.hex()[10:]))
-                            sq = self.dT["5"]["data"]["31"]["data"]
-                            idT = self.dT["5"]["data"]["1"]["data"]
-                            print(f"[{self.account_id}] Got 0500 with ID: {idT}")
+                                print(f"[{self.account_id}] Got 0500 with ID: {idT}")
 
-                            # يخرج ويرسل الشبح
-                            self.socket_client.send(ExiT('000000', self.key, self.iv))	            	            
-                            self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))  
-                            got_0500 = True
-                        except Exception as parse_err:
-                            print(f"[{self.account_id}] Error parsing 0500: {parse_err}")
-                    else:
-                        # ما جا باك 0500 → يخرج ويحاول مرة ثانية
-                        print(f"[{self.account_id}] No 0500 yet, retrying...")
-                        self.socket_client.send(ExiT('000000', self.key, self.iv))
-                        time.sleep(0.5)
+                                self.socket_client.send(ExiT('000000', self.key, self.iv))
+                                self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
+                                got_0500 = True
+                            except Exception as parse_err:
+                                print(f"[{self.account_id}] Error parsing 0500: {parse_err}")
+                        else:
+                            print(f"[{self.account_id}] No 0500 yet, retrying...")
+                            self.socket_client.send(ExiT('000000', self.key, self.iv))
+                            time.sleep(0.01)
+                    if not got_0500:
+                        return f"Failed to get 0500 for code {self.id} after {attempts} attempts"
+                    return f"/bngx master command executed successfully"
 
-                if not got_0500:
-                    return f"Failed to get 0500 for code {self.id} after {attempts} attempts"
-                return f"/bngx command executed for code {self.id}"
+                else:
+                    # باقي الحسابات ينتظرون بيانات 0500 من الحساب الرئيسي
+                    wait_attempts = 0
+                    while not shared_0500_info['got'] and wait_attempts < 100:  # ينتظر حتى 10 ثواني تقريبًا
+                        time.sleep(0.1)
+                        wait_attempts += 1
+
+                    if not shared_0500_info['got']:
+                        return "Timeout waiting for master account to get 0500"
+
+                    # الدخول كشبح باستخدام بيانات الحساب الرئيسي
+                    self.socket_client.send(GenJoinSquadsPacket(shared_0500_info['idT'], self.key, self.iv))
+                    time.sleep(0.01)
+                    self.socket_client.send(ExiT('000000', self.key, self.iv))
+                    self.socket_client.send(ghost_pakcet(shared_0500_info['idT'], self.nm, shared_0500_info['squad'], self.key, self.iv))
+
+                    return f"/bngx ghost command executed using master data"
 
             except Exception as e:
                 print(f"[{self.account_id}] Error in execute_command: {e}")
