@@ -436,7 +436,7 @@ class TcpBotConnectMain:
                     self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
                     time.sleep(0.5)
 
-                    for i in range(1):
+                    for i in range(999):
                         self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
                         try:
                             readable, _, _ = select.select([self.socket_client], [], [], 0.5)
