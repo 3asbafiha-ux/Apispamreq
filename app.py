@@ -405,7 +405,7 @@ class TcpBotConnectMain:
 
                     # يدخل السكواد
                     self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
-                    time.sleep(0.5)
+                    time.sleep(0.01)
 
                     # يتحقق من وجود باك 0500
                     if self.DaTa2 and '0500' in self.DaTa2.hex()[0:4] and len(self.DaTa2.hex()) > 30:
@@ -425,7 +425,7 @@ class TcpBotConnectMain:
                         # ما جا باك 0500 → يخرج ويحاول مرة ثانية
                         print(f"[{self.account_id}] No 0500 yet, retrying...")
                         self.socket_client.send(ExiT('000000', self.key, self.iv))
-                        time.sleep(0.5)
+                        time.sleep(0.01)
 
                 if not got_0500:
                     return f"Failed to get 0500 for code {self.id} after {attempts} attempts"
@@ -436,6 +436,7 @@ class TcpBotConnectMain:
                 return f"Error executing command: {e}"
         else:
             return f"Unknown command: {command}"
+
 def load_accounts(file_path):
     with open(file_path, 'r') as file:
         return json.load(file)
@@ -522,6 +523,7 @@ def execute_command():
 @app.route('/list_clients', methods=['GET'])
 def list_clients():
     return jsonify({'clients': list(clients.keys())}), 200
+
 @app.route('/execute_command_all', methods=['GET'])
 def execute_command_all():
     if shutting_down:
@@ -532,10 +534,10 @@ def execute_command_all():
         return jsonify({'error': 'Command parameter is required'}), 400
 
     ghost_names = {
-        "4168796914": "insta: kha_led_mhd",
-        "4168796928": "BNGX IS THE BEST",
-        "4168796916": "telegram:@BNGXXXX",
-        "4168796926": "BNGX BANNED YOU"
+        "4134172836": "insta: kha_led_mhd",
+        "4130944097": "BNGX IS THE BEST",
+        "4128857100": "telegram:@BNGXXXX",
+        "4123338376": "BNGX WILL  BANNED YOU"
     }
 
     results = {}
