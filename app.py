@@ -119,10 +119,17 @@ class TcpBotConnectMain:
                     try:
                         readable, _, _ = select.select([self.socket_client], [], [], 1.0)
                         if self.socket_client in readable:
-                            data2 = self.socket_client.recv(9999)
-                            if not data2:
+                            self.DaTa2 = self.socket_client.recv(99999)
+                            if not self.DaTa2:
                                 print(f"[{self.account_id}] Server closed connection gracefully")
                                 break
+
+                            if '0500' in self.DaTa2.hex()[0:4] and len(self.DaTa2.hex()) > 30:	         	    	    
+                                try:
+                                    self.packet = json.loads(DeCode_PackEt(f'08{self.DaTa2.hex().split("08", 1)[1]}'))
+                                    self.AutH = self.packet['5']['data']['7']['data']
+                                except: pass
+                                
                     except socket.timeout:
                         continue
                     except (OSError, socket.error) as e:
@@ -377,6 +384,7 @@ class TcpBotConnectMain:
     def execute_command(self, command, *args):
         if '/bngx' in command[:5]:
             try:
+                # تحقق من اتصال السوكيت
                 if not self.socket_client or not self.is_socket_connected(self.socket_client):
                     return "Socket not connected, please wait for connection..."
                 
@@ -387,18 +395,15 @@ class TcpBotConnectMain:
                 time.sleep(0.5)
 
                 # نخزّن البيانات مباشرة في DaTa2
-                self.DaTa2 = self.socket_client.recv(9999)
-
+                # تمامًا مثل الكود الأصلي
                 if '0500' in self.DaTa2.hex()[0:4] and len(self.DaTa2.hex()) > 30:
                     self.dT = json.loads(DeCode_PackEt(self.DaTa2.hex()[10:]))
                     sq = self.dT["5"]["data"]["31"]["data"]
                     idT = self.dT["5"]["data"]["1"]["data"]
-                    print(idT)
+                    print(idT)	            	            
 
                     self.socket_client.send(ExiT('000000', self.key, self.iv))
-                    time.sleep(0.5)
                     self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
-                    time.sleep(0.5)
 
                     for i in range(1):
                         self.socket_client.send(GenJoinSquadsPacket(self.id, self.key, self.iv))
@@ -406,7 +411,6 @@ class TcpBotConnectMain:
                         time.sleep(0.5)
                         self.socket_client.send(ExiT('000000', self.key, self.iv))
                         self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
-
                 else:
                     return f"No 0500 packet received for code {self.id}"
 
@@ -417,6 +421,7 @@ class TcpBotConnectMain:
                 return f"Error executing command: {e}"
         else:
             return f"Unknown command: {command}"
+
 
 
 def load_accounts(file_path):
