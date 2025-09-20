@@ -490,7 +490,7 @@ class TcpBotConnectMain:
 
                                                                 # تأكد من الخروج قبل إرسال Ghost packet
                                                                 self.socket_client.send(ExiT('000000', self.key, self.iv))
-                                                                time.sleep(0.01)
+                                                                time.sleep(0.5)
 
                                                                 # إرسال Ghost packet مرتين للتأكيد
                                                                 for _ in range(2):
