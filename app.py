@@ -636,7 +636,6 @@ def execute_command_all():
 
     # أسماء الحسابات لكل account_id
     ghost_names = {
-        "4168797411": "BNGX WILL  BANNED YOU",
         "4134172836": "insta: kha_led_mhd",
         "4130944097": "BNGX IS THE BEST",
         "4128857100": "telegram:@BNGXXXX",
