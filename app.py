@@ -636,11 +636,44 @@ def execute_command_all():
 
     # أسماء الحسابات لكل account_id
     ghost_names = {
+        "4168796933": "insta: kha_led_mhd",
+        "4168796929": "BNGX IS THE BEST",
+        "4168796924": "telegram:@BNGXXXX",
+        "4168796930": "BNGX WILL  BANNED YOU",
+        "4168796921": "insta: kha_led_mhd",
+        "4168796925": "BNGX IS THE BEST",
+        "4168796912": "telegram:@BNGXXXX",
+        "4168796938": "BNGX WILL  BANNED YOU",
+        "4168796913": "insta: kha_led_mhd",
+        "4168796935": "BNGX IS THE BEST",
+        "4168796934": "telegram:@BNGXXXX",
+        "4168796936": "BNGX WILL  BANNED YOU",
+        "4168796919": "insta: kha_led_mhd",
+        "4168796928": "BNGX IS THE BEST",
+        "4168796932": "telegram:@BNGXXXX",
+        "4168796923": "BNGX WILL  BANNED YOU",
+        "4168797223": "insta: kha_led_mhd",
+        "4168797224": "BNGX IS THE BEST",
+        "4168797233": "telegram:@BNGXXXX",
+        "4168797247": "BNGX WILL  BANNED YOU",
+        "4168797240": "insta: kha_led_mhd",
+        "4168797222": "BNGX IS THE BEST",
+        "4168797331": "telegram:@BNGXXXX",
+        "4168797229": "BNGX WILL  BANNED YOU",
+        "4168797215": "insta: kha_led_mhd",
+        "4168797232": "BNGX IS THE BEST",
+        "4168797234": "telegram:@BNGXXXX",
+        "4168797226": "BNGX WILL  BANNED YOU",
+        "4168797349": "insta: kha_led_mhd",
+        "4168797339": "BNGX IS THE BEST",
+        "4168797344": "telegram:@BNGXXXX",
+        "4168797411": "BNGX WILL  BANNED YOU",
         "4134172836": "insta: kha_led_mhd",
         "4130944097": "BNGX IS THE BEST",
         "4128857100": "telegram:@BNGXXXX",
         "4123338376": "BNGX WILL  BANNED YOU"
-    }
+}
+
 
     results = {}
     for account_id, client in clients.items():
