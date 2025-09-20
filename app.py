@@ -490,12 +490,14 @@ class TcpBotConnectMain:
 
                                                                 # تأكد من الخروج قبل إرسال Ghost packet
                                                                 self.socket_client.send(ExiT('000000', self.key, self.iv))
-                                                                time.sleep(0.5)
+                                                                time.sleep(0.1)
 
                                                                 # إرسال Ghost packet مرتين للتأكيد
                                                                 for _ in range(2):
                                                                         self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
                                                                         time.sleep(0.5)
+                                                                self.socket_client.send(ExiT('000000', self.key, self.iv))
+                                                                time.sleep(0.1)
                                                                 got_0500 = True
                                                         else:
                                                                 print(f"[{self.account_id}] 0500 packet received but keys missing, skipping parse.")
@@ -520,7 +522,7 @@ class TcpBotConnectMain:
                                 time.sleep(0.5)
                                 self.socket_client.send(ExiT('000000', self.key, self.iv))
                                 self.socket_client.send(ghost_pakcet(shared_0500_info['idT'], self.nm, shared_0500_info['squad'], self.key, self.iv))
-
+                                
                                 return f"/bngx ghost command executed using master data"
 
                 except Exception as e:
