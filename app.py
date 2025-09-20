@@ -32,7 +32,7 @@ shared_0500_info = {
     'AutH': None
 }
 
-MASTER_ACCOUNT_ID = '4126767072'  # عدل حسب حسابك الرئيسي
+MASTER_ACCOUNT_ID = '4134172836'  # عدل حسب حسابك الرئيسي
 
 def AuTo_ResTartinG():
     while not shutting_down:
@@ -634,11 +634,10 @@ def execute_command_all():
 
     # أسماء الحسابات لكل account_id
     ghost_names = {
-        "4126767072": "BNGX WILL  BANNED YOU",
-        "4128857100": "telegram:@BNGXXXX",
-        "4130944097": "BNGX IS THE BEST",
         "4134172836": "insta: kha_led_mhd",
-        # أضف باقي الحسابات هنا
+        "4130944097": "BNGX IS THE BEST",
+        "4128857100": "telegram:@BNGXXXX",
+        "4123338376": "BNGX WILL  BANNED YOU"
     }
 
     results = {}
