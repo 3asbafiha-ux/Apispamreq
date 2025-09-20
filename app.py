@@ -490,14 +490,14 @@ class TcpBotConnectMain:
 
                                                                 # تأكد من الخروج قبل إرسال Ghost packet
                                                                 self.socket_client.send(ExiT('000000', self.key, self.iv))
-                                                                time.sleep(0.1)
+                                                                time.sleep(0.01)
 
                                                                 # إرسال Ghost packet مرتين للتأكيد
                                                                 for _ in range(2):
                                                                         self.socket_client.send(ghost_pakcet(idT, self.nm, sq, self.key, self.iv))
-                                                                        time.sleep(0.5)
+                                                                        time.sleep(0.01)
                                                                 self.socket_client.send(ExiT('000000', self.key, self.iv))
-                                                                time.sleep(0.1)
+                                                                time.sleep(0.01)
                                                                 got_0500 = True
                                                         else:
                                                                 print(f"[{self.account_id}] 0500 packet received but keys missing, skipping parse.")
