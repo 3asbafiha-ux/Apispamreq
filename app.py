@@ -512,7 +512,7 @@ class TcpBotConnectMain:
                         else:
                                 wait_attempts = 0
                                 while not shared_0500_info['got'] and wait_attempts < 100:
-                                        time.sleep(0.3)
+                                        time.sleep(0.5)
                                         wait_attempts += 1
 
                                 if not shared_0500_info['got']:
