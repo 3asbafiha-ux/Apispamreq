@@ -512,14 +512,14 @@ class TcpBotConnectMain:
                         else:
                                 wait_attempts = 0
                                 while not shared_0500_info['got'] and wait_attempts < 100:
-                                        time.sleep(0.1)
+                                        time.sleep(0.3)
                                         wait_attempts += 1
 
                                 if not shared_0500_info['got']:
                                         return "Timeout waiting for master account to get 0500"
 
                                 self.socket_client.send(GenJoinSquadsPacket(shared_0500_info['idT'], self.key, self.iv))
-                                time.sleep(0.1)
+                                time.sleep(0.5)
                                 self.socket_client.send(ExiT('000000', self.key, self.iv))
                                 self.socket_client.send(ghost_pakcet(shared_0500_info['idT'], self.nm, shared_0500_info['squad'], self.key, self.iv))
                                 
